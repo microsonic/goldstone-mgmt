@@ -7,6 +7,7 @@
 using grpc::Channel;
 using grpc::ClientContext;
 using tai::TAI;
+using grpc::CompletionQueue;
 
 class TAIClient {
     public:
@@ -16,6 +17,8 @@ class TAIClient {
         int GetAttribute(uint64_t oid, uint64_t attr_id, std::string& value);
         int GetAttributeMetadata(tai::TAIObjectType type, const std::string& name, tai::AttributeMetadata& metadata);
         int SetAttribute(uint64_t oid, tai::TAIObjectType type, const std::string& attr, const std::string& value);
+        int Monitor(uint64_t oid, uint64_t attr_id);
     private:
         std::unique_ptr<TAI::Stub> stub_;
+        CompletionQueue cq;
 };

@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <sstream>
+#include <thread>
 
 #include <libyang/Libyang.hpp>
 #include <sysrepo-cpp/Sysrepo.hpp>
@@ -22,7 +23,7 @@ struct object_info {
 
 class TAIController : public sysrepo::Callback {
     public:
-        TAIController(sysrepo::S_Session& sess);
+        TAIController(sysrepo::S_Connection& conn);
         ~TAIController();
         void loop();
 
@@ -32,11 +33,14 @@ class TAIController : public sysrepo::Callback {
     private:
         int oper_get_single_item(sysrepo::S_Session session, const object_info& info, const char *request_xpath, libyang::S_Data_Node &parent);
         object_info object_info_from_xpath(const std::string& xpath);
-        sysrepo::S_Session m_sess;
+        sysrepo::S_Connection m_conn;
         sysrepo::S_Subscribe m_subscribe;
         TAIClient m_client;
         std::map<std::string, tai::Module> m_modules;
         bool _initialized;
+
+        int notification_loop();
+        std::thread m_notification_loop_thread;
 };
 
 #endif // __CONTROLLER_HPP__

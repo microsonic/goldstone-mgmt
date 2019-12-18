@@ -304,9 +304,24 @@ int TAIController::oper_get_items(sysrepo::S_Session session, const char *module
     return SR_ERR_OK;
 }
 
-TAIController::TAIController(sysrepo::S_Session& sess) : m_sess(sess), m_subscribe(new sysrepo::Subscribe(sess)), m_client(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials())) {
+int TAIController::notification_loop() {
+    sysrepo::S_Session sess(new sysrepo::Session(m_conn));
+
+    while (!exit_application) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::cout << "HELLO" << std::endl;
+        sysrepo::S_Vals in_vals(new sysrepo::Vals(1));
+        in_vals->val(0)->set("/goldstone-tai:network-interface-notify-event/keys", "some-value", SR_STRING_T);
+        sess->event_notif_send("/goldstone-tai:network-interface-notify-event", in_vals);
+    }
+
+}
+
+TAIController::TAIController(sysrepo::S_Connection& conn) : m_conn(conn), m_subscribe(new sysrepo::Subscribe(sysrepo::S_Session(new sysrepo::Session(conn)))), m_client(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials())) {
     std::vector<tai::Module> modules;
     m_client.ListModule(modules);
+
+    sysrepo::S_Session sess(new sysrepo::Session(conn));
 
     _initialized = false;
 
@@ -360,6 +375,8 @@ TAIController::TAIController(sysrepo::S_Session& sess) : m_sess(sess), m_subscri
     sess->apply_changes();
 
     _initialized = true;
+
+    m_notification_loop_thread = std::thread(&TAIController::notification_loop, this);
 }
 
 TAIController::~TAIController() {
@@ -383,10 +400,9 @@ int main() {
 
     sysrepo::Logs().set_stderr(SR_LL_DBG);
     sysrepo::S_Connection conn(new sysrepo::Connection);
-    sysrepo::S_Session sess(new sysrepo::Session(conn));
 
     try {
-        auto controller = std::shared_ptr<TAIController>(new TAIController(sess));
+        auto controller = std::shared_ptr<TAIController>(new TAIController(conn));
         controller->loop();
         std::cout << "Application exit requested, exiting." << std::endl;
     } catch (...) {

@@ -315,6 +315,15 @@ int ONLPController::module_change(sysrepo::S_Session session, const char *module
         return SR_ERR_OK;
     }
     std::cout << "\n\n ========== EVENT " << ev_to_str(event) << " CHANGES: ====================================\n\n" << std::endl;
+    auto it = session->get_changes_iter("//.");
+    sysrepo::S_Change change;
+    while ( (change = session->get_change_next(it)) != nullptr ) {
+        if ( change->oper() == SR_OP_CREATED || change->oper() == SR_OP_MODIFIED ) {
+            auto n = change->new_val();
+            auto info = object_info_from_xpath(std::string(n->xpath()));
+            std::cout << "xpath: " << n->xpath() << ", oid: " << info.oid << std::endl;
+        }
+    }
     return SR_ERR_OK;
 }
 
@@ -535,7 +544,7 @@ void ONLPController::loop() {
     signal(SIGINT, sigint_handler);
     signal(SIGPIPE, SIG_IGN);
     while (!exit_application) {
-        std::this_thread::sleep_for(std::chrono::seconds(1000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 

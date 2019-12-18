@@ -11,6 +11,7 @@ import yang as ly
 import sysrepo as sr
 import base64
 import struct
+import time
 
 from prompt_toolkit.document import Document
 from prompt_toolkit.completion import WordCompleter, Completion, FuzzyCompleter
@@ -221,6 +222,24 @@ class Transponder(Object):
             if len(args) != 1:
                 raise InvalidInput('usage: module <name>')
             return Module(self.session, self, args[0])
+
+        @self.command()
+        def monitor(args):
+            def cb(sess, notif_type, xpath, vals, timestamp, private_data):
+                print(sess, notif_type, xpath, vals, timestamp, private_data)
+                return sr.SR_ERR_OK
+
+            subscribe = sr.Subscribe(self.session)
+            subscribe.event_notif_subscribe("goldstone-tai", cb, None)
+
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                pass
+            finally:
+                subscribe.unsubscribe()
+
 
     def __str__(self):
         return 'transponder'

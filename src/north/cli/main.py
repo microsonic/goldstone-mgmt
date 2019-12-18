@@ -5,6 +5,8 @@ from optparse import OptionParser
 from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import Completer
+from prompt_toolkit import Application
+from prompt_toolkit.layout.layout import Layout
 
 import sys
 import os
